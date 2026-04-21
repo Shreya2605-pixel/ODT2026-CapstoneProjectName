@@ -1,0 +1,83 @@
+from machine import Pin, PWM
+import neopixel
+import time
+
+np = neopixel.NeoPixel(Pin(4), 16 )   # Pin 4, 8 LEDs (change if needed)
+
+def set_color(r, g, b):
+    for i in range(16):
+        np[i] = (r, g, b)
+    np.write()
+
+def clear_color():
+    set_color(0, 0, 0)
+
+
+# LEFT HAND
+E1 = PWM(Pin(18), freq=50)   # elbow
+T1 = PWM(Pin(19), freq=50)   # thumb
+
+# RIGHT HAND
+E2 = PWM(Pin(27), freq=50)   # elbow
+T2 = PWM(Pin(26), freq=50)   # thumb
+
+#gestures
+
+def fist_bump():   # Lose
+    time.sleep(1)
+    E1.duty(110)
+    time.sleep(3)
+    E1.duty(35)
+    time.sleep(3)
+
+def jazz_hands():  # Win
+    time.sleep(1)
+    E1.duty(120)
+    E2.duty(120)
+    time.sleep(3)
+    E1.duty(35)
+    E2.duty(35)
+    time.sleep(3)
+
+def thumbs_down():  # Game starts
+    time.sleep(1)
+    E1.duty(100)
+    E2.duty(100)
+    time.sleep(0.5)
+    T1.duty(77)
+    T2.duty(77)
+    time.sleep(3)
+    # return to original position
+    T1.duty(35)
+    time.sleep(1)
+    T2.duty(35)
+    time.sleep(1)
+    E1.duty(35)
+    E2.duty(35)
+    time.sleep(1)
+
+while True:
+    value = input("Enter command (start / win / lose): ")
+
+    if value == 'start':
+        print("Game starting - Good luck!")
+        set_color(0, 0, 255)   # Blue
+        thumbs_down()
+        clear_color()
+
+    elif value == 'win':
+        print("You win - Amaze amaze amaze!")
+        set_color(0, 255, 150)   # Teal green
+        jazz_hands()
+        clear_color()
+
+    elif value == 'lose':
+        print("Better luck next time")
+        set_color(255, 0, 0)   # Red
+        fist_bump()
+        clear_color()
+
+    else:
+        print("Invalid input")
+
+    time.sleep(0.2)
