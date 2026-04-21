@@ -1,0 +1,136 @@
+from machine import Pin, PWM
+import bluetooth
+import time
+import neopixel
+
+name = "ESP32-Rocky" 
+ble = bluetooth.BLE()
+
+ble.active(False)
+time.sleep(0.5)
+ble.active(True)
+ble.config(gap_name=name)
+
+service_UUID = bluetooth.UUID("6e400001-b5a3-f393-e0a9-e50e24dcca9e")
+char_UUID = bluetooth.UUID("6e400002-b5a3-f393-e0a9-e50e24dcca9e")
+
+char = (char_UUID, bluetooth.FLAG_WRITE)
+service = (service_UUID, (char,),)
+((char_handle,),) = ble.gatts_register_services((service,))
+
+def event_occured(event, data):
+
+    if event == 1:
+        print("Connected")
+        
+    elif event == 2:
+        print("Disconnected")
+        advertise(name)
+        
+    elif event == 3:
+        conn_handle, value_handle = data
+        if value_handle == char_handle:
+        #reading the Value written on characteristics by Phone/client
+            raw_msg = ble.gatts_read(char_handle).rstrip(b'\x00')
+            msg = raw_msg.decode().strip()
+            print("Received:", msg)
+                
+            global value
+            value = msg           
+
+def advertise(device_name):
+    
+    name_bytes = device_name.encode()
+
+    flags = bytearray([0x02, 0x01, 0x06])
+    short_name = bytearray([len(name_bytes) + 1, 0x08]) + name_bytes
+    full_name = bytearray([len(name_bytes) + 1, 0x09]) + name_bytes
+    adv_data = flags + short_name + full_name
+
+    ble.gap_advertise(50, adv_data=adv_data)
+    print("Awating Connection...Advertising as:", device_name)
+
+advertise(name)
+
+ble.irq(event_occured)
+
+# LEFT HAND
+E1 = PWM(Pin(18), freq=50)   # elbow
+T1 = PWM(Pin(19), freq=50)   # thumb
+
+# RIGHT HAND
+E2 = PWM(Pin(27), freq=50)   # elbow
+T2 = PWM(Pin(26), freq=50)   # thumb
+
+np = neopixel.NeoPixel(Pin(4), 16 )    
+
+def setcolour(r, g, b):
+    for i in range(16):
+        np[i] = (r, g, b)
+    np.write()
+
+def clearcolour():
+    setcolour(0, 0, 0)
+
+        
+def fistmybump():   # lose
+    time.sleep(1)
+    E1.duty(100)
+    time.sleep(3)
+    E1.duty(35)
+    time.sleep(3)
+
+def dab():  # win
+    time.sleep(1)
+    E1.duty(120)
+    E2.duty(120)
+    time.sleep(3)
+    E1.duty(35)
+    E2.duty(35)
+    time.sleep(3)
+    
+def thumbsdown():  # gams starts - good luck
+    time.sleep(1)
+    E1.duty(100)
+    E2.duty(100)
+    time.sleep(0.5)
+    T1.duty(77)
+    T2.duty(77)
+    time.sleep(1.5)
+    T1.duty(35)
+    time.sleep(1)
+    T2.duty(35)
+    time.sleep(1)
+    E1.duty(35)
+    E2.duty(35)
+    time.sleep(1)
+    
+
+
+value = ""
+
+while True:
+
+    if value == "1":
+        print("Start")
+        setcolour(0, 0, 255)   # Blue
+        thumbsdown()
+        clearcolour()
+        value = ""
+        
+    elif value == "2":
+        print("Win")
+        setcolour(0, 255, 150)   # Teal green
+        dab()
+        clearcolour()
+        value = ""
+        
+    elif value == "3":
+        print("Loss")
+        setcolour(255, 0, 0)   # Red
+        fistmybump()
+        clearcolour()
+        value = ""
+    time.sleep(0.2)
+
+
