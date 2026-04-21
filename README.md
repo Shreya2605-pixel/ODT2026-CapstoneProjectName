@@ -36,4 +36,4 @@ Media → Weekly progress and final output
 
 
 **👥 Team Members**
-[Name]
+Shreya Pradeep & Durva Popat
